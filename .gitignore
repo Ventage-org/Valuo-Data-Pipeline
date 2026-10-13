@@ -6,5 +6,3 @@ TI_cortez_antigravity.md
 .env
 __pycache__/
 *.pyc
-sql
-schema_training_db.sql
