@@ -5,8 +5,7 @@
 -- Motor: PostgreSQL 14+
 -- =============================================================================
 
--- 1. EXTENSIONES
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+-- 1. EXTENSIONES (PostgreSQL 14+ / Azure Flexible Server nativo)
 
 -- 2. TABLA DIMENSIONAL: DISTRITOS (22 distritos representativos de Lima Metropolitana)
 CREATE TABLE IF NOT EXISTS distritos (

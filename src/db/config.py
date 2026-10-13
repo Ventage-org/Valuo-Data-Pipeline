@@ -13,7 +13,7 @@ load_dotenv(dotenv_path=BASE_DIR / ".env")
 class DatabaseConfig:
     HOST: str = os.getenv("DB_HOST", "localhost")
     PORT: int = int(os.getenv("DB_PORT", "5432"))
-    NAME: str = os.getenv("DB_NAME", "inmobiliaria_ml_db")
+    NAME: str = os.getenv("DB_NAME", "db_dataset_valuo")
     USER: str = os.getenv("DB_USER", "postgres")
     PASSWORD: str = os.getenv("DB_PASSWORD", "postgres")
     SCHEMA: str = os.getenv("DB_SCHEMA", "public")
@@ -24,7 +24,10 @@ class DatabaseConfig:
     @classmethod
     def get_sqlalchemy_url(cls, dbname: str = None, db_name: str = None) -> str:
         target_db = dbname or db_name or cls.NAME
-        url = f"postgresql+psycopg2://{cls.USER}:{cls.PASSWORD}@{cls.HOST}:{cls.PORT}/{target_db}"
+        from urllib.parse import quote_plus
+        user_enc = quote_plus(cls.USER)
+        pass_enc = quote_plus(cls.PASSWORD)
+        url = f"postgresql+psycopg2://{user_enc}:{pass_enc}@{cls.HOST}:{cls.PORT}/{target_db}"
         if cls.SSLMODE:
             url += f"?sslmode={cls.SSLMODE}"
         return url

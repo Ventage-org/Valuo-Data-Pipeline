@@ -6,3 +6,5 @@ TI_cortez_antigravity.md
 .env
 __pycache__/
 *.pyc
+DESPLIEGUE_PIPELINE_AZURE.md
+instancia-db-dataset.md
