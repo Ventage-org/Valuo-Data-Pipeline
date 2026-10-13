@@ -5,8 +5,22 @@ Aplica las reglas de negocio, imputaciones documentadas y normalizaciones para P
 import logging
 import numpy as np
 import pandas as pd
+from src.config import CORTE_TRAIN_ANIO, CORTE_TRAIN_TRIMESTRE
 
 logger = logging.getLogger(__name__)
+
+def asignar_split_temporal(df: pd.DataFrame, corte_anio: int = None, corte_trimestre: int = None) -> np.ndarray:
+    """
+    Asigna 'TRAIN' o 'TEST' dinámicamente según la frontera temporal continua:
+    periodo = anio * 4 + trimestre
+    """
+    anio_limite = corte_anio if corte_anio is not None else CORTE_TRAIN_ANIO
+    trim_limite = corte_trimestre if corte_trimestre is not None else CORTE_TRAIN_TRIMESTRE
+    
+    periodo_registro = df["anio"].astype(int) * 4 + df["trimestre"].astype(int)
+    periodo_corte = anio_limite * 4 + trim_limite
+    return np.where(periodo_registro <= periodo_corte, "TRAIN", "TEST")
+
 
 # Diccionario oficial de UBIGEOS INEI para los 22 distritos modelados
 UBIGEO_DISTRITOS = {
@@ -86,7 +100,7 @@ def transform_contexto_distrital(df_contexto: pd.DataFrame, distrito_id_map: dic
     logger.info(f"Contexto distrital transformado: {len(df_result)} filas para PostgreSQL.")
     return df_result
 
-def transform_venta(df_raw: pd.DataFrame, distrito_id_map: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+def transform_venta(df_raw: pd.DataFrame, distrito_id_map: dict, corte_anio: int = None, corte_trimestre: int = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Transforma el Excel crudo de venta BCRP a la estructura de dataset_inmuebles_venta.
     Retorna: (df_venta_limpio, df_auditoria_flags)
@@ -141,8 +155,8 @@ def transform_venta(df_raw: pd.DataFrame, distrito_id_map: dict) -> tuple[pd.Dat
     mask_calc_target = df["precio_soles_const"].isna() | (df["precio_soles_const"] <= 0)
     df.loc[mask_calc_target, "precio_soles_const"] = (df.loc[mask_calc_target, "precio_soles_nominal"] * 100.0) / df.loc[mask_calc_target, "ipc"]
     
-    # Split temporal estándar
-    df["split_dataset"] = df["anio"].apply(lambda a: "TRAIN" if a <= 2023 else "TEST")
+    # Split temporal dinámico por trimestre
+    df["split_dataset"] = asignar_split_temporal(df, corte_anio, corte_trimestre)
     # Resetear índice para alineación consistente
     df = df.reset_index(drop=True)
     
@@ -169,7 +183,7 @@ def transform_venta(df_raw: pd.DataFrame, distrito_id_map: dict) -> tuple[pd.Dat
     logger.info(f"Venta transformada: {len(df_venta)} registros listos para BD (descartados: {filas_inicio - len(df_venta)}).")
     return df_venta, df_auditoria
 
-def transform_alquiler(df_raw: pd.DataFrame, distrito_id_map: dict) -> tuple[pd.DataFrame, pd.DataFrame]:
+def transform_alquiler(df_raw: pd.DataFrame, distrito_id_map: dict, corte_anio: int = None, corte_trimestre: int = None) -> tuple[pd.DataFrame, pd.DataFrame]:
     """
     Transforma el Excel crudo de alquiler BCRP a la estructura de dataset_inmuebles_alquiler.
     Retorna: (df_alquiler_limpio, df_auditoria_flags)
@@ -222,8 +236,8 @@ def transform_alquiler(df_raw: pd.DataFrame, distrito_id_map: dict) -> tuple[pd.
     mask_calc_target = df["alquiler_soles_const"].isna() | (df["alquiler_soles_const"] <= 0)
     df.loc[mask_calc_target, "alquiler_soles_const"] = (df.loc[mask_calc_target, "alquiler_soles_nominal"] * 100.0) / df.loc[mask_calc_target, "ipc"]
     
-    # Split temporal estándar
-    df["split_dataset"] = df["anio"].apply(lambda a: "TRAIN" if a <= 2023 else "TEST")
+    # Split temporal dinámico por trimestre
+    df["split_dataset"] = asignar_split_temporal(df, corte_anio, corte_trimestre)
     # Resetear índice para alineación consistente
     df = df.reset_index(drop=True)
     

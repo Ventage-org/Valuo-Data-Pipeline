@@ -41,7 +41,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger("ETL_PIPELINE")
 
-def run_pipeline(target: str = "all", truncate: bool = False, ejecutado_por: str = "CLI_LOCAL"):
+def run_pipeline(target: str = "all", truncate: bool = False, ejecutado_por: str = "CLI_LOCAL", corte_anio: int = None, corte_trimestre: int = None):
     """Ejecuta el pipeline ETL completo con auditoría en pipeline_ejecuciones."""
     tipo_pipeline = f"ETL_INGESTA_{target.upper()}"
     
@@ -66,7 +66,7 @@ def run_pipeline(target: str = "all", truncate: bool = False, ejecutado_por: str
             logger.info("--- Procesando Inmuebles en Venta ---")
             df_raw_venta = extract_raw_venta()
             n_leidos = len(df_raw_venta)
-            df_venta_db, df_flags_venta = transform_venta(df_raw_venta, distrito_id_map)
+            df_venta_db, df_flags_venta = transform_venta(df_raw_venta, distrito_id_map, corte_anio=corte_anio, corte_trimestre=corte_trimestre)
             n_guardados = len(df_venta_db)
             n_filtrados = n_leidos - n_guardados
             
@@ -83,7 +83,7 @@ def run_pipeline(target: str = "all", truncate: bool = False, ejecutado_por: str
             logger.info("--- Procesando Inmuebles en Alquiler ---")
             df_raw_alquiler = extract_raw_alquiler()
             n_leidos = len(df_raw_alquiler)
-            df_alquiler_db, df_flags_alquiler = transform_alquiler(df_raw_alquiler, distrito_id_map)
+            df_alquiler_db, df_flags_alquiler = transform_alquiler(df_raw_alquiler, distrito_id_map, corte_anio=corte_anio, corte_trimestre=corte_trimestre)
             n_guardados = len(df_alquiler_db)
             n_filtrados = n_leidos - n_guardados
             
@@ -114,6 +114,8 @@ def main():
     parser.add_argument("--truncate", action="store_true", help="Limpia las tablas antes de insertar los registros")
     parser.add_argument("--check-db", action="store_true", help="Verifica si PostgreSQL está accesible")
     parser.add_argument("--ejecutado-por", default="CLI_LOCAL", help="Identificador del autor o job que dispara el pipeline")
+    parser.add_argument("--corte-anio", type=int, default=None, help="Año de corte para conjunto TRAIN (por defecto desde config: 2023)")
+    parser.add_argument("--corte-trimestre", type=int, default=None, help="Trimestre de corte para conjunto TRAIN 1-4 (por defecto desde config: 4)")
     
     args = parser.parse_args()
     
@@ -132,7 +134,13 @@ def main():
         logger.info("Esquema inicializado correctamente.")
         
     if args.run_all or (not args.init_db and not args.check_db):
-        run_pipeline(target=args.target, truncate=args.truncate, ejecutado_por=args.ejecutado_por)
+        run_pipeline(
+            target=args.target,
+            truncate=args.truncate,
+            ejecutado_por=args.ejecutado_por,
+            corte_anio=args.corte_anio,
+            corte_trimestre=args.corte_trimestre
+        )
 
 if __name__ == "__main__":
     main()

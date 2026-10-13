@@ -26,7 +26,11 @@ TARGET_COL = "Precio_Soles_Const"
 TARGET_ALQUILER_COL = "Alquiler_Soles_Const"
 COL_DISTRITO = "Distrito"
 
-# Partición temporal
-TRAIN_YEARS = list(range(2016, 2024))  # 2016–2023
-TEST_YEARS = list(range(2024, 2026))   # 2024–2025
+import os
+
+# Partición temporal configurable por trimestre
+# Todo registro con (anio * 4 + trimestre) <= (CORTE_TRAIN_ANIO * 4 + CORTE_TRAIN_TRIMESTRE) será 'TRAIN'
+# Por defecto: 2023-Q4 (hasta 2023-4 es TRAIN; 2024 en adelante es TEST) para alineación estricta con la tesis
+CORTE_TRAIN_ANIO = int(os.getenv("CORTE_TRAIN_ANIO", "2023"))
+CORTE_TRAIN_TRIMESTRE = int(os.getenv("CORTE_TRAIN_TRIMESTRE", "4"))
 SPLIT_COL = "Anio"
